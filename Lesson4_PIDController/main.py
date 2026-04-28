@@ -31,18 +31,18 @@ def wrap_to_pi(angle: float) -> float:
 =========================================================================== """
 # 距離 PID -> 控制 v
 dist_pid = PIDController(
-    kp=10.0,
-    ki=0.2,
-    kd=9.6,
+    kp=1.0,
+    ki=0.0,
+    kd=0.0,
     output_limit=0.8,      # 最大線速度
     integral_limit=1.0
 )
 
 # 角度 PID -> 控制 w
 angle_pid = PIDController(
-    kp=11.0,
-    ki=5.0,
-    kd=9.8,
+    kp=1.0,
+    ki=0.0,
+    kd=0.0,
     output_limit=1.0,      # 最大角速度
     integral_limit=1.0
 )
