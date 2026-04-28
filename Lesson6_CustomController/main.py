@@ -1,6 +1,6 @@
 import simulator as sim
 import math
-from controller.pid_controller import PIDController
+from controller.fuzzy_controller import FuzzyController
 
 
 """ ==========================================================================
@@ -27,25 +27,32 @@ def wrap_to_pi(angle: float) -> float:
 
 
 """ ==========================================================================
-# PID 控制器參數設定
+# Fuzzy 控制器參數設定
 =========================================================================== """
-# 距離 PID -> 控制 v
-dist_pid = PIDController(
-    kp=10.0,
-    ki=0.2,
-    kd=9.6,
-    output_limit=0.8,      # 最大線速度
-    integral_limit=1.0
-)
+input_sets = {
+    'NB': ('trimf', [-10, -10, -5]),
+    'NS': ('trimf', [-10, -5, 0]),
+    'ZO': ('trimf', [-2, 0, 2]),
+    'PS': ('trimf', [0, 5, 10]),
+    'PB': ('trimf', [5, 10, 10])
+}
 
-# 角度 PID -> 控制 w
-angle_pid = PIDController(
-    kp=11.0,
-    ki=5.0,
-    kd=9.8,
-    output_limit=1.0,      # 最大角速度
-    integral_limit=1.0
-)
+output_sets = {
+    'NB': ('trimf', [-0.8, -0.8, -0.4]),
+    'NS': ('trimf', [-0.8, -0.4, 0]),
+    'ZO': ('trimf', [-0.2, 0, 0.2]),
+    'PS': ('trimf', [0, 0.4, 0.8]),
+    'PB': ('trimf', [0.4, 0.8, 0.8])
+}
+
+rules = [
+    ('NB', 'NB'),
+    ('NS', 'NS'),
+    ('ZO', 'ZO'),
+    ('PS', 'PS'),
+    ('PB', 'PB')
+]
+
 
 
 
@@ -57,6 +64,16 @@ def controller(dt: float, robot: sim.DifferentialDriveRobot, world: sim.World):
     global time_now
     global goal_reached
     global prev_lt, prev_rt, x, y, theta
+    global input_sets, output_sets, rules
+
+    #==================================================
+    controller = FuzzyController(
+        input_range=10,
+        output_range=0.8,
+        input_sets=input_sets,
+        output_sets=output_sets,
+        rules=rules
+    )
 
     lt, rt = robot.get_encoders()
 
@@ -89,8 +106,6 @@ def controller(dt: float, robot: sim.DifferentialDriveRobot, world: sim.World):
         robot.set_command(0.0, 0.0)
         if not goal_reached:
             goal_reached = True
-            dist_pid.reset()
-            angle_pid.reset()
             print("All waypoints and goal reached!")
         return
 
@@ -115,9 +130,9 @@ def controller(dt: float, robot: sim.DifferentialDriveRobot, world: sim.World):
         return
 
     #==================================================
-    # PID 控制
-    w = angle_pid.update(angle_error, dt)
-    v = dist_pid.update(dist_error, dt)
+    # Fuzzy 控制器
+    v = controller.update(error=dist_error)
+    w = controller.update(error=angle_error)
 
     robot.set_command(v, w)
 
